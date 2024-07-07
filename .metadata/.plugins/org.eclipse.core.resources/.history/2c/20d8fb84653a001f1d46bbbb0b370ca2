@@ -1,0 +1,250 @@
+package application;
+	
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.scene.text.Font;
+import java.io.*;
+import java.util.Random;
+
+public class Main extends Application {
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Heart Health Imaging and Recording System");
+
+        // Main page
+        VBox mainLayout = new VBox(20);
+        mainLayout.setPadding(new Insets(20));
+
+        Label welcomeLabel = new Label("Welcome to Heart Health Imaging and Recording System");
+        welcomeLabel.setFont(new Font(16));
+
+        Button patientIntakeBtn = new Button("Patient Intake");
+        Button ctScanTechBtn = new Button("CT Scan Tech View");
+        Button patientViewBtn = new Button("Patient View");
+
+        // Make buttons bigger
+        patientIntakeBtn.setMinSize(200, 50);
+        ctScanTechBtn.setMinSize(200, 50);
+        patientViewBtn.setMinSize(200, 50);
+
+        mainLayout.getChildren().addAll(welcomeLabel, patientIntakeBtn, ctScanTechBtn, patientViewBtn);
+
+        patientIntakeBtn.setOnAction(e -> showPatientIntakeView());
+        ctScanTechBtn.setOnAction(e -> showCTScanTechView());
+        patientViewBtn.setOnAction(e -> showPatientView());
+
+        Scene scene = new Scene(mainLayout, 600, 400);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void showPatientIntakeView() {
+        Stage stage = new Stage();
+        stage.setTitle("Patient Intake Form");
+
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(20));
+        grid.setVgap(10);
+        grid.setHgap(10);
+
+        TextField firstNameField = new TextField();
+        TextField lastNameField = new TextField();
+        TextField emailField = new TextField();
+        TextField phoneField = new TextField();
+        TextArea healthHistoryArea = new TextArea();
+        TextField insuranceIdField = new TextField();
+
+        grid.addRow(0, new Label("First Name:"), firstNameField);
+        grid.addRow(1, new Label("Last Name:"), lastNameField);
+        grid.addRow(2, new Label("Email:"), emailField);
+        grid.addRow(3, new Label("Phone Number:"), phoneField);
+        grid.addRow(4, new Label("Health History:"), healthHistoryArea);
+        grid.addRow(5, new Label("Insurance ID:"), insuranceIdField);
+
+        Button saveButton = new Button("Save");
+        grid.add(saveButton, 1, 6);
+
+        saveButton.setOnAction(e -> {
+            String patientId = generatePatientId();
+            savePatientInfo(patientId, firstNameField.getText(), lastNameField.getText(),
+                    emailField.getText(), phoneField.getText(), healthHistoryArea.getText(),
+                    insuranceIdField.getText());
+            stage.close();
+        });
+
+        Scene scene = new Scene(grid, 600, 500);
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    private void showCTScanTechView() {
+        Stage stage = new Stage();
+        stage.setTitle("CT Scan Tech View");
+
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(20));
+        grid.setVgap(10);
+        grid.setHgap(10);
+
+        TextField patientIdField = new TextField();
+        TextField totalCACScoreField = new TextField();
+        TextField lmField = new TextField();
+        TextField ladField = new TextField();
+        TextField lcxField = new TextField();
+        TextField rcaField = new TextField();
+        TextField pdaField = new TextField();
+
+        grid.addRow(0, new Label("Patient ID:"), patientIdField);
+        grid.addRow(1, new Label("Total Agatston CAC Score:"), totalCACScoreField);
+        
+        Label vesselLevelLabel = new Label("Vessel Level Agatston CAC Score:");
+        vesselLevelLabel.setFont(new Font(14));
+        grid.add(vesselLevelLabel, 0, 2, 2, 1);
+        
+        grid.addRow(3, new Label("LM:"), lmField);
+        grid.addRow(4, new Label("LAD:"), ladField);
+        grid.addRow(5, new Label("LCX:"), lcxField);
+        grid.addRow(6, new Label("RCA:"), rcaField);
+        grid.addRow(7, new Label("PDA:"), pdaField);
+
+        Button saveButton = new Button("Save");
+        grid.add(saveButton, 1, 8);
+
+        saveButton.setOnAction(e -> {
+            if (areAllFieldsFilled(patientIdField, totalCACScoreField, lmField, ladField, lcxField, rcaField, pdaField)) {
+                saveCTScanResults(patientIdField.getText(), totalCACScoreField.getText(),
+                        lmField.getText(), ladField.getText(), lcxField.getText(),
+                        rcaField.getText(), pdaField.getText());
+                stage.close();
+            } else {
+                showAlert("Error", "All fields must be filled.");
+            }
+        });
+
+        Scene scene = new Scene(grid, 600, 500);
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    private void showPatientView() {
+        Stage stage = new Stage();
+        stage.setTitle("Patient View");
+
+        VBox layout = new VBox(10);
+        layout.setPadding(new Insets(20));
+
+        TextField patientIdField = new TextField();
+        Button viewButton = new Button("View Data");
+
+        layout.getChildren().addAll(new Label("Enter Patient ID:"), patientIdField, viewButton);
+
+        viewButton.setOnAction(e -> {
+            String patientId = patientIdField.getText();
+            displayPatientData(patientId, layout);
+        });
+
+        Scene scene = new Scene(layout, 600, 500);
+        stage.setScene(scene);
+        stage.show();
+    }
+
+
+    private String generatePatientId() {
+        Random random = new Random();
+        return String.format("%05d", random.nextInt(100000));
+    }
+
+    private void savePatientInfo(String patientId, String firstName, String lastName, String email,
+                                 String phone, String healthHistory, String insuranceId) {
+        try (PrintWriter writer = new PrintWriter(patientId + "_PatientInfo.txt")) {
+            writer.println("Patient ID: " + patientId);
+            writer.println("First Name: " + firstName);
+            writer.println("Last Name: " + lastName);
+            writer.println("Email: " + email);
+            writer.println("Phone: " + phone);
+            writer.println("Health History: " + healthHistory);
+            writer.println("Insurance ID: " + insuranceId);
+        } catch (FileNotFoundException ex) {
+            showAlert("Error", "Unable to save patient information.");
+        }
+    }
+
+    private void saveCTScanResults(String patientId, String totalCAC, String lm, String lad,
+                                   String lcx, String rca, String pda) {
+        try (PrintWriter writer = new PrintWriter(patientId + "CTResults.txt")) {
+            writer.println("Patient ID: " + patientId);
+            writer.println("Total Agatston CAC Score: " + totalCAC);
+            writer.println("LM: " + lm);
+            writer.println("LAD: " + lad);
+            writer.println("LCX: " + lcx);
+            writer.println("RCA: " + rca);
+            writer.println("PDA: " + pda);
+        } catch (FileNotFoundException ex) {
+            showAlert("Error", "Unable to save CT scan results.");
+        }
+    }
+
+    private void displayPatientData(String patientId, VBox layout) {
+        File patientInfoFile = new File(patientId + "_PatientInfo.txt");
+        File ctResultsFile = new File(patientId + "CTResults.txt");
+
+        if (!patientInfoFile.exists()) {
+            showAlert("Error", "Wrong patient ID.");
+            return;
+        }
+
+        layout.getChildren().clear();
+        layout.getChildren().add(new Label("Patient Information:"));
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(patientInfoFile))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                layout.getChildren().add(new Label(line));
+            }
+        } catch (IOException ex) {
+            showAlert("Error", "Unable to read patient information.");
+            return;
+        }
+
+        if (ctResultsFile.exists()) {
+            layout.getChildren().add(new Label("\nCT Scan Results:"));
+            try (BufferedReader reader = new BufferedReader(new FileReader(ctResultsFile))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    layout.getChildren().add(new Label(line));
+                }
+            } catch (IOException ex) {
+                showAlert("Error", "Unable to read CT scan results.");
+            }
+        } else {
+            layout.getChildren().add(new Label("\nNo CT scan data available yet."));
+        }
+    }
+
+    private boolean areAllFieldsFilled(TextField... fields) {
+        for (TextField field : fields) {
+            if (field.getText().trim().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
